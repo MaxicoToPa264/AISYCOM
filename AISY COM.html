@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AISYCOM — AI Requests, Real Results.</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#05080f;--sb:#090c1a;--sbw:258px;
+  --c1:#00ffcc;--c2:#7b5cff;--c3:#ff4d6d;--c4:#ffb700;--c5:#00b4ff;--c6:#ff6b35;
+  --text:#f0f4ff;--muted:#6a7a9a;--card:rgba(255,255,255,0.04);--border:rgba(255,255,255,0.07);
+}
+html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+#bgCanvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+/* ── TOPBAR ── */
+.topbar{
+  position:fixed;top:0;left:0;right:0;z-index:100;height:58px;
+  background:rgba(5,8,15,0.93);backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 18px;gap:14px;
+}
+.hamburger{
+  width:38px;height:38px;border-radius:10px;border:1px solid var(--border);
+  background:rgba(255,255,255,.04);cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  transition:all .25s;flex-shrink:0;
+}
+.hamburger:hover{background:rgba(255,255,255,.08);border-color:var(--c2)}
+.hbar{width:16px;height:2px;border-radius:2px;background:var(--muted);transition:all .35s cubic-bezier(.4,0,.2,1)}
+.hamburger.open .hbar:nth-child(1){transform:translateY(7px) rotate(45deg);background:var(--c1)}
+.hamburger.open .hbar:nth-child(2){opacity:0;transform:scaleX(0)}
+.hamburger.open .hbar:nth-child(3){transform:translateY(-7px) rotate(-45deg);background:var(--c1)}
+.tb-logo{
+  font-family:'Syne',sans-serif;font-weight:800;font-size:1.2rem;
+  background:linear-gradient(90deg,var(--c1),var(--c2),var(--c3));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-size:200%;animation:lsh 4s linear infinite;letter-spacing:.04em;
+}
+@keyframes lsh{0%{background-position:0%}100%{background-position:200%}}
+.tb-slogan{
+  font-size:.72rem;color:var(--muted);font-style:italic;
+  border-left:1px solid var(--border);padding-left:14px;margin-left:2px;
+}
+@media(max-width:580px){.tb-slogan{display:none}}
+.tb-page{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--muted)}
+.tb-dot{width:7px;height:7px;border-radius:50%;animation:bl 2s infinite;flex-shrink:0}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:.15}}
+.tb-cta{
+  margin-left:10px;padding:8px 20px;border-radius:50px;
+  background:linear-gradient(135deg,var(--c1),var(--c2));
+  color:#000;font-weight:700;font-size:.82rem;border:none;cursor:pointer;
+  transition:all .25s;white-space:nowrap;flex-shrink:0;
+  animation:ctap 3s ease-in-out infinite;
+}
+@keyframes ctap{0%,100%{box-shadow:0 0 0 0 rgba(0,255,204,.35)}50%{box-shadow:0 0 22px 4px rgba(0,255,204,.12)}}
+.tb-cta:hover{transform:scale(1.05)}
+
+/* ── OVERLAY ── */
+.overlay{position:fixed;inset:0;z-index:149;background:rgba(0,0,0,0);pointer-events:none;transition:background .35s}
+.overlay.show{background:rgba(0,0,0,.6);pointer-events:all}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  position:fixed;top:0;left:0;bottom:0;z-index:150;width:var(--sbw);
+  background:rgba(7,10,20,0.99);backdrop-filter:blur(32px);
+  border-right:1px solid var(--border);display:flex;flex-direction:column;
+  transform:translateX(-100%);transition:transform .38s cubic-bezier(.4,0,.2,1);
+  box-shadow:6px 0 48px rgba(0,0,0,.7);
+}
+.sidebar.open{transform:translateX(0)}
+.sb-head{padding:16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-shrink:0}
+.sb-brand{display:flex;align-items:center;gap:10px}
+.sb-ico{
+  width:36px;height:36px;border-radius:10px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--c1),var(--c2));
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Syne',sans-serif;font-weight:800;font-size:.82rem;color:#000;letter-spacing:.02em;
+}
+.sb-name{font-family:'Syne',sans-serif;font-weight:800;font-size:1.05rem;background:linear-gradient(90deg,var(--c1),var(--c2),var(--c3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200%;animation:lsh 4s linear infinite;letter-spacing:.04em}
+.sb-sub{font-size:.63rem;color:var(--muted);font-style:italic;margin-top:2px}
+.sb-close{width:29px;height:29px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.04);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.72rem;color:var(--muted);transition:all .22s}
+.sb-close:hover{background:rgba(255,77,109,.15);border-color:var(--c3);color:var(--c3)}
+.sb-nav{flex:1;overflow-y:auto;padding:12px 10px;display:flex;flex-direction:column;gap:2px}
+.sb-nav::-webkit-scrollbar{width:2px}
+.sb-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.07);border-radius:2px}
+.sb-sec{font-size:.61rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:14px 10px 5px}
+.sb-item{
+  display:flex;align-items:center;gap:12px;padding:10px 11px;border-radius:11px;cursor:pointer;
+  transition:all .22s;color:var(--muted);font-size:.87rem;font-weight:500;
+  position:relative;border:1px solid transparent;
+}
+.sb-item:hover{background:rgba(255,255,255,.05);color:var(--text)}
+.sb-item.active{background:rgba(255,255,255,.06);border-color:var(--border)}
+.sb-item.active::before{content:'';position:absolute;left:0;top:22%;bottom:22%;width:3px;border-radius:0 3px 3px 0}
+.sb-item[data-p="home"].active{color:var(--c1);border-color:rgba(0,255,204,.2)}    .sb-item[data-p="home"].active::before{background:var(--c1)}
+.sb-item[data-p="how"].active{color:var(--c5);border-color:rgba(0,180,255,.2)}     .sb-item[data-p="how"].active::before{background:var(--c5)}
+.sb-item[data-p="options"].active{color:var(--c2);border-color:rgba(123,92,255,.2)}.sb-item[data-p="options"].active::before{background:var(--c2)}
+.sb-item[data-p="plans"].active{color:var(--c4);border-color:rgba(255,183,0,.2)}   .sb-item[data-p="plans"].active::before{background:var(--c4)}
+.sb-item[data-p="eco"].active{color:var(--c6);border-color:rgba(255,107,53,.2)}    .sb-item[data-p="eco"].active::before{background:var(--c6)}
+.sb-item[data-p="contact"].active{color:var(--c3);border-color:rgba(255,77,109,.2)}.sb-item[data-p="contact"].active::before{background:var(--c3)}
+.sb-icon{width:32px;height:32px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.95rem;background:rgba(255,255,255,.05);transition:transform .25s}
+.sb-item:hover .sb-icon,.sb-item.active .sb-icon{transform:scale(1.12)}
+.sb-item[data-p="home"].active .sb-icon{background:rgba(0,255,204,.14)}
+.sb-item[data-p="how"].active .sb-icon{background:rgba(0,180,255,.14)}
+.sb-item[data-p="options"].active .sb-icon{background:rgba(123,92,255,.14)}
+.sb-item[data-p="plans"].active .sb-icon{background:rgba(255,183,0,.14)}
+.sb-item[data-p="eco"].active .sb-icon{background:rgba(255,107,53,.14)}
+.sb-item[data-p="contact"].active .sb-icon{background:rgba(255,77,109,.14)}
+.sb-footer{padding:12px 10px;border-top:1px solid var(--border);flex-shrink:0}
+.sb-cta-btn{
+  display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:11px;cursor:pointer;
+  background:linear-gradient(135deg,rgba(0,255,204,.1),rgba(123,92,255,.1));
+  border:1px solid rgba(0,255,204,.18);color:var(--c1);font-size:.86rem;font-weight:700;transition:all .25s;
+}
+.sb-cta-btn:hover{background:linear-gradient(135deg,rgba(0,255,204,.2),rgba(123,92,255,.2));transform:scale(1.02)}
+.cta-ic{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--c1),var(--c2));display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0}
+
+/* ── PAGES ── */
+.main{position:fixed;top:58px;left:0;right:0;bottom:0;overflow:hidden;z-index:1}
+.page{
+  position:absolute;inset:0;overflow-y:auto;padding:54px 6% 90px;
+  opacity:0;pointer-events:none;
+  transform:translateY(16px) scale(.99);
+  transition:opacity .42s cubic-bezier(.4,0,.2,1),transform .42s cubic-bezier(.4,0,.2,1);
+}
+.page.on{opacity:1;transform:none;pointer-events:all}
+.page::-webkit-scrollbar{width:3px}
+.page::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px}
+
+/* ── TYPO ── */
+h1{font-family:'Syne',sans-serif;font-weight:800;line-height:1.03;font-size:clamp(2.8rem,5.5vw,5rem)}
+h2{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(1.9rem,3vw,2.8rem);line-height:1.1;margin-bottom:14px}
+h3{font-family:'Syne',sans-serif;font-weight:700}
+.gr1{background:linear-gradient(135deg,var(--c1),var(--c2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.gr2{background:linear-gradient(135deg,var(--c3),var(--c4));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.gr3{background:linear-gradient(135deg,var(--c5),var(--c2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.gr4{background:linear-gradient(135deg,var(--c4),var(--c6));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.tag{display:inline-flex;align-items:center;gap:8px;padding:5px 14px;border-radius:50px;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px}
+.t1{background:rgba(0,255,204,.1);border:1px solid rgba(0,255,204,.2);color:var(--c1)}
+.t2{background:rgba(0,180,255,.1);border:1px solid rgba(0,180,255,.2);color:var(--c5)}
+.t3{background:rgba(123,92,255,.1);border:1px solid rgba(123,92,255,.2);color:var(--c2)}
+.t4{background:rgba(255,183,0,.1);border:1px solid rgba(255,183,0,.2);color:var(--c4)}
+.t5{background:rgba(255,107,53,.1);border:1px solid rgba(255,107,53,.2);color:var(--c6)}
+.t6{background:rgba(255,77,109,.1);border:1px solid rgba(255,77,109,.2);color:var(--c3)}
+.blink{width:6px;height:6px;border-radius:50%;animation:bl 2s infinite}
+.t1 .blink{background:var(--c1)}.t2 .blink{background:var(--c5)}.t3 .blink{background:var(--c2)}
+.t4 .blink{background:var(--c4)}.t5 .blink{background:var(--c6)}.t6 .blink{background:var(--c3)}
+.btn{display:inline-flex;align-items:center;gap:9px;padding:13px 28px;border-radius:50px;font-weight:700;font-size:.93rem;cursor:pointer;border:none;transition:all .3s}
+.bp{background:linear-gradient(135deg,var(--c1),var(--c5));color:#000}
+.bp:hover{transform:translateY(-3px);box-shadow:0 12px 32px rgba(0,255,204,.32)}
+.bs{background:transparent;border:1.5px solid var(--border);color:var(--text)}
+.bs:hover{border-color:var(--c2);color:var(--c2);transform:translateY(-2px)}
+
+/* ── HOME ── */
+.hero-slogan{
+  font-family:'Syne',sans-serif;font-weight:800;
+  font-size:clamp(3.2rem,7vw,6rem);line-height:1.0;letter-spacing:-.02em;
+  margin:22px 0 18px;
+}
+.hs-l1{display:block;background:linear-gradient(135deg,var(--c1),var(--c5),var(--c2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200%;animation:gsh 5s ease-in-out infinite alternate}
+.hs-l2{display:block;background:linear-gradient(135deg,var(--c3),var(--c4));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200%;animation:gsh 5s 1s ease-in-out infinite alternate}
+@keyframes gsh{0%{background-position:0%}100%{background-position:100%}}
+.hero-div{width:56px;height:3px;border-radius:3px;margin:24px 0;background:linear-gradient(90deg,var(--c1),var(--c2),var(--c3),var(--c4),var(--c1));background-size:300%;animation:gm 3s linear infinite}
+@keyframes gm{0%{background-position:0%}100%{background-position:300%}}
+.hero-sub{color:var(--muted);font-size:1.08rem;max-width:500px;line-height:1.75;margin-bottom:10px}
+.hero-sub strong{color:var(--text);font-weight:500}
+.price-pill{display:inline-block;padding:8px 18px;border-radius:9px;font-weight:700;font-size:.9rem;background:rgba(255,183,0,.1);border:1px solid rgba(255,183,0,.28);color:var(--c4);margin:8px 0 28px}
+.hero-btns{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:46px}
+.hero-cards{display:flex;gap:14px;flex-wrap:wrap}
+.hc{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:20px 22px;min-width:155px;position:relative;overflow:hidden}
+.hc.a{border-color:rgba(0,255,204,.2);animation:fl 4.5s ease-in-out infinite}
+.hc.b{border-color:rgba(123,92,255,.2);animation:fl 4.5s ease-in-out infinite;animation-delay:-2s}
+.hc.c{border-color:rgba(255,183,0,.2);animation:fl 4.5s ease-in-out infinite;animation-delay:-1s}
+@keyframes fl{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+.hc-glow{position:absolute;inset:0;opacity:.07;border-radius:20px}
+.hc.a .hc-glow{background:radial-gradient(circle at 50% 0,var(--c1),transparent 70%)}
+.hc.b .hc-glow{background:radial-gradient(circle at 50% 0,var(--c2),transparent 70%)}
+.hc.c .hc-glow{background:radial-gradient(circle at 50% 0,var(--c4),transparent 70%)}
+.hc-ico{font-size:1.9rem;margin-bottom:9px}
+.hc-lbl{font-size:.68rem;color:var(--muted);margin-bottom:3px}
+.hc-ttl{font-weight:600;font-size:.9rem}
+.hchip{display:inline-block;font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:4px;margin-top:5px}
+.hc.a .hchip{background:rgba(0,255,204,.15);color:var(--c1)}
+.hc.b .hchip{background:rgba(123,92,255,.15);color:var(--c2)}
+.hc.c .hchip{background:rgba(255,183,0,.15);color:var(--c4)}
+
+/* ── HOW IT WORKS ── */
+.grid5{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:15px;margin-top:38px}
+.sc{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:25px 22px;position:relative;overflow:hidden;transition:transform .3s,border-color .3s;cursor:default}
+.sc:hover{transform:translateY(-5px)}
+.sc-bar{position:absolute;top:0;left:0;right:0;height:3px;transform:scaleX(0);transform-origin:left;transition:transform .35s}
+.sc:hover .sc-bar{transform:scaleX(1)}
+.sc:nth-child(1){--hc:var(--c1)}.sc:nth-child(2){--hc:var(--c5)}.sc:nth-child(3){--hc:var(--c2)}.sc:nth-child(4){--hc:var(--c4)}.sc:nth-child(5){--hc:var(--c3)}
+.sc .sc-bar{background:var(--hc)}.sc:hover{border-color:var(--hc)}
+.sc-n{font-family:'Syne',sans-serif;font-size:2.4rem;font-weight:800;opacity:.12;line-height:1;color:var(--hc)}
+.sc-ico{font-size:1.7rem;margin:8px 0 10px}
+.sc h3{font-size:.93rem;margin-bottom:5px}.sc p{color:var(--muted);font-size:.83rem;line-height:1.6}
+
+/* ── OPTIONS ── */
+.og{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:15px;margin-top:38px}
+.oc{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px;transition:all .3s;cursor:default;position:relative;overflow:hidden}
+.oc::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .3s;border-radius:20px}
+.oc:nth-child(1){--oc:var(--c1)}.oc:nth-child(2){--oc:var(--c2)}.oc:nth-child(3){--oc:var(--c5)}
+.oc:nth-child(4){--oc:var(--c4)}.oc:nth-child(5){--oc:var(--c6)}.oc:nth-child(6){--oc:var(--c3)}
+.oc::before{background:var(--oc)}.oc:hover::before{opacity:.04}.oc:hover{border-color:var(--oc);transform:translateY(-4px)}
+.oc-ico{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin-bottom:12px;background:rgba(255,255,255,.05)}
+.oc h3{font-size:.93rem;margin-bottom:6px}.oc p{color:var(--muted);font-size:.83rem;line-height:1.6}
+.sbox{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px;max-width:520px;margin-top:26px;position:relative;overflow:hidden}
+.sbox::after{content:'';position:absolute;top:-1px;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--c1),var(--c2),var(--c3),var(--c4),var(--c1));background-size:300%;animation:gm 4s linear infinite}
+.srow{display:flex;justify-content:space-between;margin-bottom:9px;font-size:.86rem;font-weight:500}
+.sv{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;color:var(--c1)}
+input[type=range]{width:100%;appearance:none;height:5px;border-radius:3px;outline:none;cursor:pointer;margin-bottom:20px;background:var(--border);accent-color:var(--c1)}
+input[type=range]::-webkit-slider-thumb{appearance:none;width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--c1),var(--c2));box-shadow:0 0 14px rgba(0,255,204,.5)}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:7px}
+.chip{padding:6px 13px;border-radius:50px;border:1px solid var(--border);font-size:.78rem;cursor:pointer;color:var(--muted);background:none;transition:all .22s}
+.chip:hover,.chip.on{border-color:var(--c2);color:var(--c2);background:rgba(123,92,255,.1)}
+
+/* ── PLANS ── */
+.togw{display:flex;align-items:center;gap:12px;margin-bottom:34px}
+.tl{font-size:.85rem;color:var(--muted);font-weight:500}
+.tog{width:50px;height:27px;border-radius:50px;background:rgba(255,255,255,.08);border:1px solid var(--border);cursor:pointer;position:relative;transition:background .3s}
+.tog.on{background:linear-gradient(90deg,var(--c2),var(--c1))}
+.knob{position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;background:#fff;transition:transform .3s;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.tog.on .knob{transform:translateX(23px)}
+.save-badge{background:rgba(0,255,204,.1);color:var(--c1);border:1px solid rgba(0,255,204,.2);border-radius:50px;font-size:.7rem;font-weight:700;padding:3px 10px}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:15px}
+.plan{background:var(--card);border:1px solid var(--border);border-radius:22px;padding:25px 22px;position:relative;transition:all .3s;overflow:hidden}
+.plan::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.plan:nth-child(1)::before{background:linear-gradient(90deg,var(--c5),var(--c1))}
+.plan:nth-child(2)::before{background:linear-gradient(90deg,var(--c2),var(--c3))}
+.plan:nth-child(3)::before{background:linear-gradient(90deg,var(--c4),var(--c6))}
+.plan:nth-child(4)::before{background:linear-gradient(90deg,var(--c3),var(--c2))}
+.plan:hover{transform:translateY(-5px);box-shadow:0 20px 48px rgba(0,0,0,.4)}
+.plan.hot{border-color:rgba(123,92,255,.35);box-shadow:0 0 36px rgba(123,92,255,.14)}
+.pbadge{position:absolute;top:-1px;left:50%;transform:translateX(-50%);padding:4px 15px;border-radius:0 0 11px 11px;font-size:.67rem;font-weight:700;background:linear-gradient(90deg,var(--c2),var(--c3));color:#fff;white-space:nowrap}
+.pname{font-family:'Syne',sans-serif;font-weight:700;font-size:.94rem;margin-bottom:7px}
+.pprice{font-family:'Syne',sans-serif;font-weight:800;font-size:2.2rem;line-height:1;margin:12px 0 3px}
+.pprice sub{font-size:.78rem;font-weight:400;color:var(--muted)}
+.pcycle{color:var(--muted);font-size:.77rem;margin-bottom:6px}
+.pdesc{color:var(--muted);font-size:.81rem;line-height:1.5;margin-bottom:18px;min-height:34px}
+.pf{list-style:none;display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
+.pf li{display:flex;align-items:flex-start;gap:8px;font-size:.82rem;color:var(--muted)}
+.pf li::before{content:'✓';font-weight:700;flex-shrink:0;margin-top:1px}
+.plan:nth-child(1) .pf li::before{color:var(--c1)}.plan:nth-child(2) .pf li::before{color:var(--c2)}
+.plan:nth-child(3) .pf li::before{color:var(--c4)}.plan:nth-child(4) .pf li::before{color:var(--c3)}
+.pbtn{display:block;text-align:center;padding:11px;border-radius:10px;font-weight:700;font-size:.85rem;cursor:pointer;border:1px solid var(--border);color:var(--text);background:none;width:100%;transition:all .28s}
+.pbtn:hover{border-color:var(--c2);color:var(--c2)}
+.pbtn.fill{border:none;color:#fff;background:linear-gradient(135deg,var(--c2),var(--c3))}
+.pbtn.fill:hover{box-shadow:0 0 22px rgba(123,92,255,.5)}
+.tirage{margin-top:38px;border-radius:22px;padding:38px;text-align:center;background:linear-gradient(135deg,rgba(123,92,255,.12),rgba(0,255,204,.07),rgba(255,77,109,.06));border:1px solid rgba(123,92,255,.25);position:relative;overflow:hidden}
+.tirage::after{content:'🎉';font-size:8rem;position:absolute;right:20px;bottom:-20px;opacity:.05;line-height:1}
+.tirage h3{font-family:'Syne',sans-serif;font-size:1.65rem;font-weight:800;margin-bottom:9px}
+.tirage p{color:var(--muted);max-width:420px;margin:0 auto 22px;line-height:1.7;font-size:.9rem}
+
+/* ── ECO ── */
+.estats{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:13px;margin-top:38px}
+.es{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:22px;text-align:center;transition:transform .3s}
+.es:hover{transform:translateY(-4px)}
+.es:nth-child(1){border-color:rgba(0,255,204,.15)}.es:nth-child(2){border-color:rgba(0,180,255,.15)}
+.es:nth-child(3){border-color:rgba(123,92,255,.15)}.es:nth-child(4){border-color:rgba(255,183,0,.15)}
+.en{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800}
+.es:nth-child(1) .en{color:var(--c1)}.es:nth-child(2) .en{color:var(--c5)}
+.es:nth-child(3) .en{color:var(--c2)}.es:nth-child(4) .en{color:var(--c4)}
+.el{color:var(--muted);font-size:.79rem;margin-top:5px}
+.eitems{display:flex;flex-direction:column;gap:12px;margin-top:22px;max-width:620px}
+.ei{display:flex;align-items:flex-start;gap:14px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;transition:all .28s}
+.ei:hover{transform:translateX(5px)}
+.ei:nth-child(1):hover{border-color:var(--c1)}.ei:nth-child(2):hover{border-color:var(--c5)}
+.ei:nth-child(3):hover{border-color:var(--c2)}.ei:nth-child(4):hover{border-color:var(--c4)}
+.ei-ico{font-size:1.5rem;flex-shrink:0}
+.ei h4{font-weight:600;margin-bottom:3px;font-size:.92rem}.ei p{color:var(--muted);font-size:.82rem;line-height:1.55}
+
+/* ── CONTACT ── */
+.ctc{max-width:560px;margin:0 auto;text-align:center}
+.ccard{background:var(--card);border:1px solid var(--border);border-radius:26px;padding:48px 34px;margin-top:40px;position:relative;overflow:hidden}
+.ccard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--c1),var(--c2),var(--c3),var(--c4),var(--c1));background-size:300%;animation:gm 5s linear infinite}
+.pblock{display:flex;align-items:center;gap:14px;justify-content:center;background:rgba(0,255,204,.07);border:1.5px solid rgba(0,255,204,.22);border-radius:16px;padding:16px 24px;margin:24px auto;text-decoration:none;transition:all .3s;width:fit-content;cursor:pointer}
+.pblock:hover{background:rgba(0,255,204,.13);box-shadow:0 0 36px rgba(0,255,204,.16);transform:scale(1.02)}
+.pnum{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;color:var(--c1)}
+.phint{color:var(--muted);font-size:.75rem;margin-top:2px}
+.fpills{display:flex;gap:9px;flex-wrap:wrap;justify-content:center;margin-top:20px}
+.fp{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:50px;padding:7px 14px;font-size:.79rem;transition:border-color .25s}
+.fp:hover{border-color:var(--c2)}
+.fn{width:19px;height:19px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.66rem;font-weight:700;flex-shrink:0;color:#fff}
+.fp:nth-child(1) .fn{background:var(--c1)}.fp:nth-child(2) .fn{background:var(--c5)}
+.fp:nth-child(3) .fn{background:var(--c2)}.fp:nth-child(4) .fn{background:var(--c4)}
+
+/* ── WAVE ANIM ── */
+@keyframes fU{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+.wave>*{opacity:0;animation:fU .45s ease forwards}
+.wave>*:nth-child(1){animation-delay:.04s}.wave>*:nth-child(2){animation-delay:.10s}
+.wave>*:nth-child(3){animation-delay:.16s}.wave>*:nth-child(4){animation-delay:.22s}
+.wave>*:nth-child(5){animation-delay:.28s}.wave>*:nth-child(6){animation-delay:.34s}
+</style>
+</head>
+<body>
+<canvas id="bgCanvas"></canvas>
+
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+  <div class="hamburger" id="ham" onclick="toggleSb()">
+    <div class="hbar"></div><div class="hbar"></div><div class="hbar"></div>
+  </div>
+  <div class="tb-logo">AISYCOM</div>
+  <div class="tb-slogan">AI Requests, Real Results.</div>
+  <div class="tb-page">
+    <div class="tb-dot" id="tdot" style="background:var(--c1)"></div>
+    <span id="tpage">Home</span>
+  </div>
+  <button class="tb-cta" onclick="go('contact')">Get Started →</button>
+</div>
+
+<!-- ── OVERLAY ── -->
+<div class="overlay" id="overlay" onclick="closeSb()"></div>
+
+<!-- ── SIDEBAR ── -->
+<aside class="sidebar" id="sb">
+  <div class="sb-head">
+    <div class="sb-brand">
+      <div class="sb-ico">AI</div>
+      <div>
+        <div class="sb-name">AISYCOM</div>
+        <div class="sb-sub">AI Requests, Real Results.</div>
+      </div>
+    </div>
+    <div class="sb-close" onclick="closeSb()">✕</div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-sec">Navigation</div>
+    <div class="sb-item active" data-p="home" onclick="go('home')"><div class="sb-icon">🏠</div>Home</div>
+    <div class="sb-item" data-p="how" onclick="go('how')"><div class="sb-icon">⚡</div>How It Works</div>
+    <div class="sb-item" data-p="options" onclick="go('options')"><div class="sb-icon">🎨</div>Creative Options</div>
+    <div class="sb-sec">Pricing</div>
+    <div class="sb-item" data-p="plans" onclick="go('plans')"><div class="sb-icon">💳</div>Plans & Pricing</div>
+    <div class="sb-sec">More</div>
+    <div class="sb-item" data-p="eco" onclick="go('eco')"><div class="sb-icon">🌱</div>Eco-Responsible</div>
+    <div class="sb-item" data-p="contact" onclick="go('contact')"><div class="sb-icon">📞</div>Contact</div>
+  </nav>
+  <div class="sb-footer">
+    <div class="sb-cta-btn" onclick="go('contact');closeSb()">
+      <div class="cta-ic">🚀</div>Start Now — It's Free
+    </div>
+  </div>
+</aside>
+
+<!-- ── MAIN ── -->
+<main class="main">
+
+  <!-- HOME -->
+  <div class="page on" id="page-home">
+    <div class="wave">
+      <div class="tag t1"><div class="blink"></div> AI · Advertising · Accessible</div>
+      <div class="hero-slogan">
+        <span class="hs-l1">AI Requests,</span>
+        <span class="hs-l2">Real Results.</span>
+      </div>
+      <div class="hero-div"></div>
+      <p class="hero-sub">You shoot. We create. <strong>Professional AI-powered ads</strong> — from your phone, delivered fast and sustainably.</p>
+      <div class="price-pill">💰 Starting at 0 CHF · Max 700 CHF</div>
+      <div class="hero-btns">
+        <button class="btn bp" onclick="go('contact')">📞 Contact Us</button>
+        <button class="btn bs" onclick="go('how')">How it works →</button>
+      </div>
+      <div style="font-size:.8rem;color:var(--muted);margin-bottom:16px;font-weight:500;text-transform:uppercase;letter-spacing:.08em">What we do</div>
+      <div class="hero-cards">
+        <div class="hc a"><div class="hc-glow"></div><div class="hc-ico">📸</div><div class="hc-lbl">You send</div><div class="hc-ttl">Your photos</div><div class="hchip">Simple</div></div>
+        <div class="hc b"><div class="hc-glow"></div><div class="hc-ico">🤖</div><div class="hc-lbl">We generate</div><div class="hc-ttl">Your AI ad</div><div class="hchip">Magic</div></div>
+        <div class="hc c"><div class="hc-glow"></div><div class="hc-ico">🚀</div><div class="hc-lbl">You receive</div><div class="hc-ttl">Ready to publish</div><div class="hchip">Fast</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <div class="page" id="page-how">
+    <div class="tag t2"><div class="blink"></div> Process</div>
+    <h2><span class="gr3">5 steps.</span> That's all.</h2>
+    <p style="color:var(--muted);max-width:470px;line-height:1.7">No camera crew, no travel, no hassle. Just your phone and our AI.</p>
+    <div class="grid5 wave">
+      <div class="sc"><div class="sc-bar"></div><div class="sc-n">01</div><div class="sc-ico">📱</div><h3>Open our site</h3><p>Access from any device. Zero installation required.</p></div>
+      <div class="sc"><div class="sc-bar"></div><div class="sc-n">02</div><div class="sc-ico">☎️</div><h3>Tap our number</h3><p>Add us as a contact — WhatsApp, Signal or SMS.</p></div>
+      <div class="sc"><div class="sc-bar"></div><div class="sc-n">03</div><div class="sc-ico">🖼️</div><h3>Send your photos</h3><p>Shoot your products at home and send them over.</p></div>
+      <div class="sc"><div class="sc-bar"></div><div class="sc-n">04</div><div class="sc-ico">🤖</div><h3>AI animates it all</h3><p>Our team generates a polished, animated ad from your photos.</p></div>
+      <div class="sc"><div class="sc-bar"></div><div class="sc-n">05</div><div class="sc-ico">🎉</div><h3>Your ad is ready</h3><p>Clean, professional, ready to publish — at an unbeatable price.</p></div>
+    </div>
+  </div>
+
+  <!-- OPTIONS -->
+  <div class="page" id="page-options">
+    <div class="tag t3"><div class="blink"></div> Customization</div>
+    <h2>Your ad, <span class="gr1">your rules.</span></h2>
+    <p style="color:var(--muted);max-width:470px;line-height:1.7">Pick exactly the look you want with our unique creative options.</p>
+    <div class="og wave">
+      <div class="oc"><div class="oc-ico">⚙️</div><h3>AI Percentage</h3><p>From 0% to 100% — you keep full creative control.</p></div>
+      <div class="oc"><div class="oc-ico">🎨</div><h3>Cartoon Effect</h3><p>Turn your photos into colorful, fun cartoon animations.</p></div>
+      <div class="oc"><div class="oc-ico">🌐</div><h3>Basic 3D Animation</h3><p>Add depth and elegance to your visuals effortlessly.</p></div>
+      <div class="oc"><div class="oc-ico">💎</div><h3>Advanced 3D Animation</h3><p>Cinematic, immersive rendering. Made to leave an impression.</p></div>
+      <div class="oc"><div class="oc-ico">🎯</div><h3>Realistic Effect</h3><p>High-quality photorealistic result. Your product, flawlessly staged.</p></div>
+      <div class="oc"><div class="oc-ico">⚡</div><h3>Custom Style</h3><p>Describe the vibe — we craft a style unique to your brand.</p></div>
+    </div>
+    <div class="sbox">
+      <div class="tag t3" style="margin-bottom:15px"><div class="blink"></div> Configure your ad live</div>
+      <div class="srow"><span>AI share in your ad</span><span class="sv" id="iaV">70%</span></div>
+      <input type="range" min="0" max="100" value="70" id="iaS">
+      <div style="font-size:.84rem;font-weight:500;margin-bottom:8px;color:var(--muted)">Animation style</div>
+      <div class="chips">
+        <button class="chip on" onclick="pickC(this)">🎨 Cartoon</button>
+        <button class="chip" onclick="pickC(this)">🌐 3D Basic</button>
+        <button class="chip" onclick="pickC(this)">💎 3D Advanced</button>
+        <button class="chip" onclick="pickC(this)">🎯 Realistic</button>
+        <button class="chip" onclick="pickC(this)">⚡ Custom</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLANS -->
+  <div class="page" id="page-plans">
+    <div class="tag t4"><div class="blink"></div> Plans & Pricing</div>
+    <h2>Transparent. <span class="gr4">Affordable.</span></h2>
+    <p style="color:var(--muted);max-width:470px;line-height:1.7;margin-bottom:26px">Fixed, clear pricing — no surprises, whether you're just starting out or already established.</p>
+    <div class="togw">
+      <span class="tl">Monthly</span>
+      <div class="tog" id="tog" onclick="switchC()"><div class="knob"></div></div>
+      <span class="tl">Annual</span>
+      <span class="save-badge" id="svb" style="display:none">−20% 🎉</span>
+    </div>
+    <div class="plans wave">
+      <div class="plan">
+        <div class="pname">Starter</div>
+        <div class="pprice" id="pr0">199 <sub>CHF</sub></div>
+        <div class="pcycle" id="cy0">per month</div>
+        <div class="pdesc">Test the waters and launch your first ad.</div>
+        <ul class="pf"><li>1 animated ad / month</li><li>Up to 10 photos</li><li>Style of your choice</li><li>Delivered in 5 days</li><li>1 revision included</li></ul>
+        <button class="pbtn" onclick="go('contact')">Get started →</button>
+      </div>
+      <div class="plan hot">
+        <div class="pbadge">⭐ Most Popular</div>
+        <div class="pname">Pro</div>
+        <div class="pprice" id="pr1">450 <sub>CHF</sub></div>
+        <div class="pcycle" id="cy1">per month</div>
+        <div class="pdesc">Best value for active businesses.</div>
+        <ul class="pf"><li>3 animated ads / month</li><li>Unlimited photos</li><li>All styles available</li><li>Custom AI percentage</li><li>Delivered in 3 days</li><li>3 revisions included</li><li>Annual giveaway entry</li></ul>
+        <button class="pbtn fill" onclick="go('contact')">Choose Pro →</button>
+      </div>
+      <div class="plan">
+        <div class="pname">Premium</div>
+        <div class="pprice" id="pr2">700 <sub>CHF</sub></div>
+        <div class="pcycle" id="cy2">per month</div>
+        <div class="pdesc">Full campaign, cinematic results.</div>
+        <ul class="pf"><li>5 animated ads / month</li><li>Advanced 3D included</li><li>100% custom style</li><li>Express 48h delivery</li><li>Unlimited revisions</li><li>Priority giveaway entry</li></ul>
+        <button class="pbtn" onclick="go('contact')">Choose Premium →</button>
+      </div>
+      <div class="plan">
+        <div class="pname">Custom</div>
+        <div class="pprice">On <sub>quote</sub></div>
+        <div class="pcycle">tailored to you</div>
+        <div class="pdesc">Specific needs? We adapt entirely.</div>
+        <ul class="pf"><li>Flexible volume</li><li>Full brand integration</li><li>Custom SLA</li><li>Dedicated manager</li></ul>
+        <button class="pbtn" onclick="go('contact')">Contact us →</button>
+      </div>
+    </div>
+    <div class="tirage">
+      <div style="font-size:2.6rem;margin-bottom:12px">🎉</div>
+      <h3>Annual <span class="gr1">Giveaway</span></h3>
+      <p>Every Pro or Premium client is automatically entered. Each year, one business wins a complete ad campaign — completely free!</p>
+      <button class="btn bp" onclick="go('contact')">Enter for free</button>
+    </div>
+  </div>
+
+  <!-- ECO -->
+  <div class="page" id="page-eco">
+    <div class="tag t5"><div class="blink"></div> Environmental Impact</div>
+    <h2>The <span class="gr4">eco-responsible</span> ad agency.</h2>
+    <p style="color:var(--muted);max-width:470px;line-height:1.7">We reimagined advertising to eliminate unnecessary pollution entirely.</p>
+    <div class="estats wave">
+      <div class="es"><div class="en">0 km</div><div class="el">camera crew travel</div></div>
+      <div class="es"><div class="en">
